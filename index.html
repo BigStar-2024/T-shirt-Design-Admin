@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Shirt Image Upload</title>
+    <style>
+        .app {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #dropArea {
+            border: 2px dashed #ccc;
+            width: 500px;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .button {
+            background-color: rgb(77, 73, 73);
+            color: white;
+        }
+
+        .button:hover {
+            background-color: rgb(218, 249, 172);
+            color: brown;
+        }
+
+        .title {
+            color: brown;
+            font-weight: 600;
+        }
+
+        .new-area {
+            position: absolute;
+            border: 2px solid red;
+            background-color: rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+            /* Prevent new area from blocking mouse events */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <h1 class="title">T-Shirt ダイシングツール(管理者)</h1>
+        <div style="margin: 10px">
+            <div style="margin: 0px">
+                <input type="text" id="sampleImageURL" placeholder="サンプル画像URLを入力"
+                    style="width: 300px; margin: 10px; color: purple; font-size: 20px">
+                <button class="button" onclick="loadSampleImage()"
+                    style="margin: 10px; padding: 5px 20px; border-radius: 10px; font-size: 20px">サンプル画像の読み込み</button>
+            </div>
+            <div style="margin-top: 10px">
+                <input type="text" id="customURL" placeholder="カスタムURLを入力"
+                    style="width: 300px; margin: 10px; color: purple; font-size: 20px">
+                <button class="button" onclick="uploadSampleImage()"
+                    style="margin: 10px; padding: 5px 20px; border-radius: 10px; font-size: 20px">OK</button>
+            </div>
+        </div>
+        <div id="screenshot">
+            <div id="dropArea" ondrop="handleDrop(event)" ondragover="allowDrop(event)">
+                <img id="sampleImage" src="" alt="サンプル画像" style="width: 500px; height: auto"
+                    ondrop="dropImage(event)" ondragover="allowDrop(event)" draggable="true" ondragstart="drag(event)"
+                    crossorigin="anonymous">
+            </div>
+        </div>
+        <!-- Add a new display field -->
+        <div id="displayAreaInfo" style="margin-top: 10px; color: green;"></div>
+        <!-- Add a "Copy" button -->
+        <button class="button" onclick="copyUploadedUrl()"
+            style="margin-top: 10px; padding: 5px 20px; border-radius: 10px; font-size: 20px">コピー URL</button>
+
+
+    </div>
+    <script>
+        let startX, startY, endX, endY;
+        let newArea;
+        let previousArea;
+        let uploadedImageUrl = ''; // Variable to store the uploaded image URL
+
+        function loadSampleImage() {
+            const sampleImageURL = document.getElementById('sampleImageURL').value;
+            const sampleImage = document.getElementById('sampleImage');
+            sampleImage.src = sampleImageURL;
+        }
+
+
+        function removePreviousArea() {
+            if (previousArea) {
+                previousArea.remove();
+            }
+        }
+
+        function handleMouseDown(event) {
+            startX = event.clientX;
+            startY = event.clientY;
+            // Remove the previous new area if it exists
+            if (newArea) {
+                newArea.remove();
+            }
+            // Create a new area
+            newArea = document.createElement('div');
+            newArea.className = 'new-area';
+            newArea.style.left = startX - document.getElementById('dropArea').offsetLeft + 'px';
+            newArea.style.top = startY - document.getElementById('dropArea').offsetTop + 'px';
+            document.getElementById('dropArea').appendChild(newArea);
+            // Add event listeners for mousemove and mouseup
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        function handleMouseMove(event) {
+            endX = event.clientX;
+            endY = event.clientY;
+            newArea.style.width = Math.abs(endX - startX) + 'px';
+            newArea.style.height = Math.abs(endY - startY) + 'px';
+            newArea.style.left = Math.min(startX, endX) - document.getElementById('dropArea').offsetLeft + 'px';
+            newArea.style.top = Math.min(startY, endY) - document.getElementById('dropArea').offsetTop + 'px';
+            const dropAreaWidth = document.getElementById('dropArea').offsetWidth;
+            const dropAreaHeight = document.getElementById('dropArea').offsetHeight;
+            const areaLeft = Math.min(startX, endX) - document.getElementById('dropArea').offsetLeft;
+            const areaTop = Math.min(startY, endY) - document.getElementById('dropArea').offsetTop;
+            const areaWidth = Math.abs(endX - startX);
+            const areaHeight = Math.abs(endY - startY);
+            const leftPercentage = ((areaLeft / dropAreaWidth) * 100).toFixed(2);
+            const topPercentage = ((areaTop / dropAreaHeight) * 100).toFixed(2);
+            const widthPercentage = ((areaWidth / dropAreaWidth) * 100).toFixed(2);
+            const heightPercentage = ((areaHeight / dropAreaHeight) * 100).toFixed(2);
+            const areaInfoText = `Top: ${topPercentage}%, Left: ${leftPercentage}%, Width: ${widthPercentage}%, Height: ${heightPercentage}%`;
+            document.getElementById('displayAreaInfo').innerText = areaInfoText;
+        }
+
+        function handleMouseUp() {
+            // Remove the previous area if it exists
+            if (previousArea) {
+                previousArea.remove();
+            }
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            // Set the current newArea as the previousArea
+            previousArea = newArea;
+        }
+
+        function uploadSampleImage() {
+            // Generate the new URL with areaInfo and custom URL
+            const sampleImageURL = document.getElementById('sampleImageURL').value;
+            const areaInfoText = document.getElementById('displayAreaInfo').innerText;
+            const customURL = document.getElementById('customURL').value;
+            const uploadedUrl = `${sampleImageURL}?${customURL}?${areaInfoText.replace(/ /g, '')}`;
+
+            // For demonstration, display the uploaded URL in the interface
+            uploadedImageUrl = uploadedUrl;
+            document.getElementById('displayAreaInfo').innerText = `Uploaded Image URL: ${uploadedImageUrl}`;
+        }
+
+        document.getElementById('dropArea').addEventListener('mousedown', function (event) {
+            event.preventDefault(); // Prevent default behavior
+            handleMouseDown(event);
+        });
+
+        function copyUploadedUrl() {
+            const uploadedUrlText = document.getElementById('displayAreaInfo').innerText;
+            const uploadedUrl = uploadedUrlText.split(': ')[1];
+
+            // Create a temporary textarea element to copy the text to the clipboard
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = uploadedUrl;
+            document.body.appendChild(tempTextArea);
+
+            // Select and copy the text
+            tempTextArea.select();
+            document.execCommand('copy');
+
+            // Remove the temporary textarea
+            document.body.removeChild(tempTextArea);
+
+            // Show a message or perform any other action to indicate successful copy
+            alert('URL copied to clipboard: ' + uploadedUrl);
+
+            const url = uploadedUrl;  // Replace with the actual URL
+            console.log(url);
+            fetch('http://127.0.0.1:5000/store-url', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url })
+            })
+            .then(response => console.log('URL copied to server'))
+            .catch(error => console.error('Error copying URL to server:', error));
+        }
+
+        
+    </script>
+</body>
+
+</html>
