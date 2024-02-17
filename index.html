@@ -67,9 +67,8 @@
         </div>
         <div id="screenshot">
             <div id="dropArea" ondrop="handleDrop(event)" ondragover="allowDrop(event)">
-                <img id="sampleImage" src="" alt="サンプル画像" style="width: 500px; height: auto"
-                    ondrop="dropImage(event)" ondragover="allowDrop(event)" draggable="true" ondragstart="drag(event)"
-                    crossorigin="anonymous">
+                <img id="sampleImage" src="" alt="サンプル画像" style="width: 500px; height: auto" ondrop="dropImage(event)"
+                    ondragover="allowDrop(event)" draggable="true" ondragstart="drag(event)" crossorigin="anonymous">
             </div>
         </div>
         <!-- Add a new display field -->
@@ -194,11 +193,17 @@
                 },
                 body: JSON.stringify({ url: url })
             })
-            .then(response => console.log('URL copied to server'))
-            .catch(error => console.error('Error copying URL to server:', error));
+                .then(response => {
+                    if (response.ok) {
+                        console.log('URL copied to server');
+                    } else {
+                        console.error('Failed to copy URL to server');
+                    }
+                })
+                .catch(error => console.error('Error copying URL to server:', error));
         }
 
-        
+
     </script>
 </body>
 
